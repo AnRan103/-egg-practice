@@ -3,10 +3,11 @@
 /**
  * @param {Egg.Application} app - egg application
  */
+
 module.exports = app => {
-  const {router, controller} = app;
+  const { router, controller } = app;
   router.get('/money/list', controller.money.list);
-  router.post('/money/add', controller.money.add);
-  router.post('/money/query', controller.money.add);
+  router.get('/money/average', controller.money.average);
+  router.post('/money/add/muti', controller.money.addMoneys);
   router.post('/user/login', controller.user.login);
 };

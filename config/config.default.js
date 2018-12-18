@@ -20,7 +20,7 @@ module.exports = appInfo => {
   // 连接数据库
   config.mysql = {
     client: {
-      host: '192.168.3.111',
+      host: '127.0.0.1',
       port: '3306',
       user: 'root',
       password: '850668546',

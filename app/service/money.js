@@ -3,52 +3,49 @@
 const Service = require('egg').Service;
 
 class MoneyService extends Service {
-  async findList() {
-    const result = await this.app.mysql.get('account_book');
+  async findList(params) {
+    const where = {};
+    if (params.state) where.state = params.state;
+    const result = await this.app.mysql.select('account_book', {
+      where,
+      // columns: ['author', 'title'],
+      orders: [[ 'pay_time', 'desc' ]],
+    });
+    return { list: result };
+  }
+
+  async addMoneys(obj) {
+    const userList = await this.app.mysql.select('user');
+    const users = {};
+    userList.forEach((item) => {
+      users[item.id] = item;
+    });
+    obj.money.forEach(item => {
+      item.gmt_created = this.app.mysql.literals.now;
+      item.payerName = users[item.payer].chineseName;
+    });
+    console.log(obj.money);
+    const result = await this.app.mysql.insert('account_book', obj.money);
     return result;
   }
 
-  async add(obj) {
-    for (var i = obj.length - 1; i >= 0; i--) {   //这里是循环定时 上传
-      await this.app.mysql.insert('account_book', obj[i]);
-    }
-
-  }
-
-
-  async query(obj) {
-    const TABLE_NAME = 'account_book';
-    const QUERY_STR = 'id, fee, detail, payer,gmt_created';
-    var QUERY_CRITERIA = "";
-    if (obj.create_user != "") {
-      QUERY_CRITERIA = "and payer=" + obj.payer;
-    }
-
-    if (obj.detail != "") {
-      QUERY_CRITERIA = "and detail like %" + obj.detail + "%";
-    }
-
-    if (obj.startTime != "") {
-      QUERY_CRITERIA = "and gmt_created >=" + obj.startTime;
-    }
-
-    if (obj.endTime != "") {
-      QUERY_CRITERIA = "and gmt_created <=" + obj.endTime;
-    }
-
-    QUERY_CRITERIA = QUERY_CRITERIA.substring(3);
-
-    let sql = `select ${QUERY_STR} from ${TABLE_NAME} where ${QUERY_CRITERIA}`;
-    const row = await this.app.mysql.query(sql);
-
-    var totalFee = 0;
-
-    for (var i = row.length - 1; i >= 0; i--) {   //这里是循环定时 上传
-      totalFee = totalFee + row[i].fee;
-    }
-
-    var result = {data: row, totalFee: totalFee};
+  async getAverage(obj) {
+    const sql = `
+    SELECT payer, payerName, SUM(fee) as total
+    FROM account_book
+    WHERE state = 1
+    GROUP BY payer, payerName
+    `;
+    const result = await this.app.mysql.query(sql);
+    console.log(result);
     return result;
+    // this.findList({ state : 1 }).then((res) => {
+    //   let sum = 0;
+    //   res.list.forEach((item) => {
+    //     sum = sum + item.fee;
+    //   });
+    //   const average = sum / 3;
+    // });
   }
 }
 
